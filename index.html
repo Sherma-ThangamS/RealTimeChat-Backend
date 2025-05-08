@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Testing</title>
+  </head>
+  <body>
+    Let's crack this
+    <input type="text" name="" id="" />
+    <button>Send Message</button>
+    <div class="messages"></div>
+    <script>
+      const ws = new WebSocket("ws://localhost:8080", "echo-protocol");
+      const userId = Math.floor(Math.random() * 10000).toString();
+      const messagesHTML = document.querySelector(".messages");
+      console.log(ws);
+      function handleUpvotes(chatId) {
+        ws.send(
+          JSON.stringify({
+            type: "UPVOTE_MESSAGE",
+            payload: {
+              roomId: "1",
+              userId,
+              chatId,
+            },
+          })
+        );
+      }
+      ws.onopen = () => {
+        ws.send(
+          JSON.stringify({
+            type: "JOIN_ROOM",
+            payload: {
+              roomId: "1",
+              userId: userId,
+              name: "SST",
+            },
+          })
+        );
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const { type, payload } = JSON.parse(event.data);
+          if (type === "ADD_CHAT") {
+            const message = payload.message;
+            const child = document.createElement("p");
+            const butt = document.createElement("button");
+            child.innerHTML = message;
+            butt.innerText = `(${payload.upvotes})`;
+            butt.setAttribute("onclick", `handleUpvotes(${payload.chatId})`);
+            butt.setAttribute("id", `message-${payload.chatId}`);
+            messagesHTML.appendChild(child);
+            messagesHTML.appendChild(butt);
+          } else if (type === "UPDATE_CHAT") {
+            const button = document.querySelector(`#message-${payload.chatId}`);
+            button.innerHTML = `(${payload.upvotes})`;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      const data = document.querySelector("input");
+      const send = document.querySelector("button");
+      send.addEventListener("click", () => {
+        ws.send(
+          JSON.stringify({
+            type: "SEND_MESSAGE",
+            payload: {
+              roomId: "1",
+              userId: userId,
+              message: data.value,
+            },
+          })
+        );
+        console.log("send");
+      });
+    </script>
+  </body>
+</html>
